@@ -1,0 +1,12 @@
+docker run -d \
+  --name pgdb \
+  -e POSTGRES_PASSWORD=post@2000 \
+  -e DB_NAME=logi360 \
+  -e DB_USER=postgres \
+  -e DB_PASSWORD=post@2000 \
+  -e DB_HOST=localhost \
+  -e DB_PORT=5432 \
+  -p 5431:5432 \
+  -v pgdata:/var/lib/postgresql/data \
+  -v "C:/Users/Administrator/Desktop/New folder/Python:/backups" \
+  pg-backup-image
