@@ -5,14 +5,14 @@ import time
 import sys
 
 # ---------- CONFIGURATION ----------
-HOST = "localhost"
-PORT = "5432"
-USER = "postgres"
-DB_NAME = "logia360"
-PASSWORD = "post@2000"  # agar environment variable nahi use karna
+HOST = os.getenv("DB_HOST", "localhost")
+PORT = os.getenv("DB_PORT", "5432")
+USER = os.getenv("DB_USER", "postgres")
+DB_NAME = os.getenv("DB_NAME", "postgres")
+PASSWORD = os.getenv("DB_PASSWORD", "password")
 
 # Backup directory
-BACKUP_DIR = r"C:\Users\Administrator\Desktop\New folder\Python"
+BACKUP_DIR = "/backups"   # inside container but mounted to host
 
 # Backup time
 BACKUP_HOUR = 2   # 2 AM
@@ -23,10 +23,9 @@ def create_backup():
     os.makedirs(BACKUP_DIR, exist_ok=True)
 
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    BACKUP_FILE = f"brickproduction_backup_{timestamp}.dump"
+    BACKUP_FILE = f"{DB_NAME}_backup_{timestamp}.dump"
     BACKUP_PATH = os.path.join(BACKUP_DIR, BACKUP_FILE)
 
-    # Set password
     os.environ["PGPASSWORD"] = PASSWORD
 
     dump_command = [
@@ -40,34 +39,29 @@ def create_backup():
         DB_NAME
     ]
 
-    print(f"🚀 Running backup... File will be saved at:\n{BACKUP_PATH}\n")
-
+    print(f"🚀 Running backup... {BACKUP_PATH}")
     result = subprocess.run(dump_command, text=True)
 
     if result.returncode == 0:
-        print("✅ Backup created successfully!")
+        print("✅ Backup created")
     else:
-        print("❌ Backup failed!")
+        print("❌ Backup failed")
 
-    print("🛑 Backup finished, script exiting.")
-    sys.exit(0)  # backup ke baad script close ho jaye
+    sys.exit(0)
 
 
 def wait_until_backup_time():
     while True:
         now = datetime.datetime.now()
-        target_time = now.replace(
-            hour=BACKUP_HOUR, minute=BACKUP_MINUTE, second=0, microsecond=0)
+        target = now.replace(hour=BACKUP_HOUR, minute=BACKUP_MINUTE,
+                             second=0, microsecond=0)
 
-        # agar current time 2 AM ke baad hai, next day ka target set karo
-        if now >= target_time:
-            target_time += datetime.timedelta(days=1)
+        if now >= target:
+            target += datetime.timedelta(days=1)
 
-        wait_seconds = (target_time - now).total_seconds()
-        print(f"⏳ Waiting {int(wait_seconds)} seconds until 2 AM backup...")
+        wait_seconds = (target - now).total_seconds()
+        print(f"⏳ Waiting {int(wait_seconds)} seconds for next backup…")
         time.sleep(wait_seconds)
-
-        # Run backup at target time
         create_backup()
 
 
